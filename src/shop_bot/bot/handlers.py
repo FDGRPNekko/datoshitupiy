@@ -1369,14 +1369,20 @@ def get_user_router() -> Router:
                         f"❌ Для сервера \"{host_name}\" не настроены тарифы."
                     )
             elif action == 'new':
+                # Для нового ключа хост не выбираем — используем первый доступный, как при start-покупке
                 hosts = get_all_hosts()
                 if not hosts:
                     await callback.message.edit_text("❌ В данный момент нет доступных серверов для покупки.")
                 else:
-                    await callback.message.edit_text(
-                        "Выберите сервер, на котором хотите приобрести ключ:",
-                        reply_markup=keyboards.create_host_selection_keyboard(hosts, action="new")
-                    )
+                    first_host_name = hosts[0].get("host_name")
+                    plans = get_plans_for_host(first_host_name)
+                    if not plans:
+                        await callback.message.edit_text("❌ Нет настроенных тарифов.")
+                    else:
+                        await callback.message.edit_text(
+                            "Выберите тариф (ключ будет содержать все серверы в одной подписке):",
+                            reply_markup=keyboards.create_plans_keyboard(plans, action="new", host_name=first_host_name)
+                        )
             else:
                 await show_main_menu(callback.message, edit_message=True)
         finally:
