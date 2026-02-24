@@ -233,9 +233,22 @@ async def create_or_update_key_on_host(host_name: str, email: str, days_to_add: 
     }
 
 async def get_key_details_from_host(key_data: dict) -> dict | None:
-    # Единый ключ (все хосты): отдаём одну ссылку на подписку-агрегатор
+    # Единый ключ (все хосты): сначала пытаемся отдать ссылку на агрегатор,
+    # если домен не настроен — собираем конфиги напрямую и отдаём vless‑строки.
     if key_data.get("subscription_token"):
-        return {"connection_string": get_unified_subscription_link(key_data["subscription_token"])}
+        url = get_unified_subscription_link(key_data["subscription_token"])
+        if url:
+            return {"connection_string": url}
+        # Fallback: возвращаем все VLESS-конфиги строкой, по одному на строку
+        try:
+            key_id = key_data.get("key_id")
+            if key_id is not None:
+                configs = await get_aggregated_connection_strings(int(key_id))
+                if configs:
+                    return {"connection_string": "\n".join(configs)}
+        except Exception as e:
+            logger.error(f"get_key_details_from_host aggregated fallback failed for key_id={key_data.get('key_id')}: {e}")
+        # Если ничего не удалось собрать — продолжаем в обычную ветку host_name
 
     host_name = key_data.get('host_name')
     if not host_name:
