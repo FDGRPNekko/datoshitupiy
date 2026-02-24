@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Промокоды{% endblock %}
+{% block content %}
+
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Промокоды</h2>
+      <div class="text-secondary">Скидки и бонусные дни по коду</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><strong>Добавить промокод</strong></div>
+  <div class="card-body">
+    <form action="{{ url_for('add_promo_route') }}" method="post" class="row g-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="col-md-2">
+        <label class="form-label">Код</label>
+        <input type="text" name="code" class="form-control" placeholder="PROMO20" required />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Скидка %</label>
+        <input type="number" name="discount_percent" class="form-control" min="0" max="100" step="0.01" value="0" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Бонус дней</label>
+        <input type="number" name="days_bonus" class="form-control" min="0" value="0" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Макс. активаций</label>
+        <input type="number" name="max_activations" class="form-control" min="0" value="0" title="0 = без лимита" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Мин. сумма (RUB)</label>
+        <input type="number" name="min_purchase_rub" class="form-control" min="0" step="0.01" value="0" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Действует с</label>
+        <input type="datetime-local" name="valid_from" class="form-control" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Действует до</label>
+        <input type="datetime-local" name="valid_until" class="form-control" />
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary">Добавить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-vcenter">
+        <thead>
+          <tr>
+            <th>Код</th>
+            <th>Скидка %</th>
+            <th>Бонус дней</th>
+            <th>Активации</th>
+            <th>Мин. сумма</th>
+            <th>С / по</th>
+            <th class="w-1">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in promos %}
+          <tr>
+            <td><code>{{ p.code }}</code></td>
+            <td>{{ p.discount_percent or 0 }}</td>
+            <td>{{ p.days_bonus or 0 }}</td>
+            <td>{{ p.used_count or 0 }}{% if p.max_activations %} / {{ p.max_activations }}{% endif %}</td>
+            <td>{{ p.min_purchase_rub or 0 }} RUB</td>
+            <td class="small">
+              {{ str(p.valid_from)[:19] if p.valid_from else '—' }}<br/>
+              {{ str(p.valid_until)[:19] if p.valid_until else '—' }}
+            </td>
+            <td>
+              <form action="{{ url_for('delete_promo_route', promo_id=p.id) }}" method="post" class="d-inline" onsubmit="return confirm('Удалить промокод?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-secondary">Промокодов пока нет.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
